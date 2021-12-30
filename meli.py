@@ -6,7 +6,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-
+import tqdm
 from argparse import ArgumentParser
 
 ### Exemplos
@@ -82,7 +82,7 @@ class Scraper:
             
     def scraper(self) -> None:
         if DEBUG and len(self.targets) > self.max: self.targets = self.targets[:self.max]
-        for link in self.targets:
+        for link in tqdm.tqdm(self.targets):
             self.driver.get(link)
             
             page_html = self.driver.page_source
@@ -122,7 +122,7 @@ class Scraper:
         with open(os.path.join(path, f'meli_{self.prefix}.json'), 'w') as fp:
             json.dump(self.targets_dict, fp)
          
-        for i, link in enumerate(self.image_links):
+        for i, link in tqdm.tqdm(enumerate(self.image_links)):
             
             # How to make this loop use multiprocessing?
             
@@ -141,7 +141,7 @@ class Scraper:
         parser.add_argument('--name', type=str, required=True)
         parser.add_argument('--output', type=str, required=True)
         parser.add_argument('--fmt', type=str, default='jpg')
-        parser.add_argument('--n_cars', type=int, default=100)   
+        parser.add_argument('--n_cars', type=int, default=200)   
         parser.add_argument('--prefix', type=str)
         
         return parser

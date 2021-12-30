@@ -8,7 +8,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
 from argparse import ArgumentParser
-
+import tqdm
 DEBUG = False
 
 ### Exemplos
@@ -78,7 +78,7 @@ class Scraper:
             
     def scraper(self) -> None:
         if DEBUG: self.targets = self.targets[:self.max]
-        for link in self.targets:
+        for link in tqdm.tqdm(self.targets):
             self.driver.get(link)
             
             page_html = self.driver.page_source
@@ -118,7 +118,7 @@ class Scraper:
         with open(os.path.join(path, f'olx_{self.prefix}.json'), 'w') as fp:
             json.dump(self.targets_dict, fp)
          
-        for i, link in enumerate(self.image_links):
+        for i, link in tqdm.tqdm(enumerate(self.image_links)):
             
             # How to make this loop use multiprocessing?
             
