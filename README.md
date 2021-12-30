@@ -9,13 +9,16 @@ A simple image scraper for Mercado Libre and OLX (Brazil) using Selenium, URLlib
 Scraper simples para Mercado Livre e OLX usando Selenium, URLLib e Beautiful Soup
 
 ## Usage
-###Example cmd**:
+### Example cmd:
 
 ```
 python main.py --site {site} --name {name} -maker {make} --year 2022 --output {output_path}
 ```
 
 ## Commands
+
+[en-EN]
+
 The ```--site``` option of the site to be searched, ```'meli'```, ```'olx'``` or ```'both'```. [Required] \
 The ```--name``` name of the product, is also used to create the download directory and the prefix of every image. [Required] \
 The ```--maker``` maker of the product, is also used to create the download directory and the prefix of every image. [Required] \
