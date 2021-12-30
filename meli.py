@@ -15,6 +15,9 @@ from argparse import ArgumentParser
 # python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/creta_YearRange_2022-2022 --name hyundai_creta --prefix hyundai_creta_2022 --output /MeLi_Scraper
 # python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/toro_YearRange_2022-2022 --name fiat_toro --prefix fiat_toro_2022 --output /MeLi_Scraper
 # python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/onix_YearRange_2022-2022 --name chevrolet_onix --prefix chevrolet_onix_2022 /MeLi_Scraper
+# python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/strada_YearRange_2022-2022 --name fiat_strada --prefix fiat_strada_2022 --output /MeLi_Scraper
+
+DEBUG = True
 
 class Scraper:
     def __init__(self, hparams) -> None:
@@ -27,8 +30,8 @@ class Scraper:
         if hparams.prefix:
             prefix = hparams.prefix.lower()
             
-            if prefix[:-1] != '_': 
-                prefix = f'{prefix}_'
+            if prefix[:-1] == '_': 
+                prefix = prefix[:-1]
             
             self.prefix = prefix
             
@@ -69,26 +72,40 @@ class Scraper:
         
         while n_links < self.max:
             # XPATH that contains the buttom to the next page
-            self.driver.find_element(By.XPATH, """//*[@id="root-app"]/div/div/section/div[3]/ul/li[3]/a""")
+            try:
+                self.driver.find_element(By.XPATH, """//*[@id="root-app"]/div/div/section/div[3]/ul/li[3]/a""")
+            except Exception as e:
+                self.max = n_links
+                print(f'{e}: No more cars')
             n_links = self.drive(n_links)
         print(f'Found {n_links} unique cars on sale')
             
     def scraper(self) -> None:
+        if DEBUG and len(self.targets) > self.max: self.targets = self.targets[:self.max]
         for link in self.targets:
             self.driver.get(link)
             
             page_html = self.driver.page_source
-            pageSoup = bs4.BeautifulSoup(page_html, 'html.parser')
-            ### class that contains the image source
-            images = pageSoup.findAll('img', {'class':'ui-pdp-image ui-pdp-gallery__figure__image'})
-            
-            for image in images:
-                ### atribute of the image that contains the source
-                image = image.attrs['src']
-                image = f'{str(image[:-5])}.{self.fmt}'
-                self.image_links.append(image)
-            
-            self.targets_dict[link] = [i for i in self.image_links]
+            try:
+                # check if title of page has the correct name and manufacturer
+                for name in self.name.split('_'):
+                    assert name in self.driver.title.lower()
+                
+                pageSoup = bs4.BeautifulSoup(page_html, 'html.parser')
+                ### class that contains the image source
+                images = pageSoup.findAll('img', {'class':'ui-pdp-image ui-pdp-gallery__figure__image'})
+                
+                for image in images:
+                    ### atribute of the image that contains the source
+                    image = image.attrs['src']
+                    image = f'{str(image[:-5])}.{self.fmt}'
+                    self.image_links.append(image)
+                
+                self.targets_dict[link] = [i for i in self.image_links]
+                
+            except AssertionError as ae:
+                print(f'{ae}: {self.driver.title} doesn\'t match query {self.name}')
+
         self.driver.close()
                 
         print(f"A total of {len(self.image_links)} images was found.")
@@ -102,7 +119,7 @@ class Scraper:
             if e.errno != errno.EEXIST:
                 raise
         
-        with open(os.path.join(path, f'meli_{self.prefix[:-1]}.json'), 'w') as fp:
+        with open(os.path.join(path, f'meli_{self.prefix}.json'), 'w') as fp:
             json.dump(self.targets_dict, fp)
          
         for i, link in enumerate(self.image_links):
@@ -111,7 +128,7 @@ class Scraper:
             
             req = Request(link, headers={'User-Agent': 'Mozilla/5.0'})
             webpage = urlopen(req).read()
-            with open(os.path.join(path, f"meli_{self.prefix}{i:04d}.{self.fmt}"), 'wb') as f:
+            with open(os.path.join(path, f"meli_{self.prefix}_{i:04d}.{self.fmt}"), 'wb') as f:
                 f.write(webpage)    
            
         print('done!')

@@ -11,10 +11,10 @@ from argparse import ArgumentParser
 
 DEBUG = False
 
-
 ### Exemplos
 # ------ ------ ----- https://www.olx.com.br/autos-e-pecas/carros-vans-e-utilitarios/{marca}/{carro}/{year}?q={carro}
 # python olx.py --url https://www.olx.com.br/autos-e-pecas/carros-vans-e-utilitarios/fiat/strada/2022?q=strada --name fiat_strada --prefix fiat_strada_2022 --output /MeLi_Scraper
+
 
 class Scraper:
     def __init__(self, hparams) -> None:
@@ -27,8 +27,8 @@ class Scraper:
         if hparams.prefix:
             prefix = hparams.prefix.lower()
             
-            if prefix[:-1] != '_': 
-                prefix = f'{prefix}_'
+            if prefix[:-1] == '_': 
+                prefix = prefix[:-1]
             
             self.prefix = prefix
             
@@ -68,7 +68,11 @@ class Scraper:
         
         while n_links < self.max:
             # XPATH that contains the buttom to the next page
-            self.driver.find_element(By.XPATH, """//*[@id="listing-main-content-slot"]/div[12]/div/div/div[2]/div/div[1]/div/a""")
+            try:
+                self.driver.find_element(By.XPATH, """//*[@id="listing-main-content-slot"]/div[12]/div/div/div[2]/div/div[1]/div/a""")
+            except Exception as e:
+                self.max = n_links
+                print(f'{e}: No more cars')
             n_links = self.drive(n_links)
         print(f'Found {n_links} unique cars on sale')
             
@@ -78,17 +82,26 @@ class Scraper:
             self.driver.get(link)
             
             page_html = self.driver.page_source
-            pageSoup = bs4.BeautifulSoup(page_html, 'html.parser')
-            ### class that contains the image source
-            images = pageSoup.findAll('img', {'class':'image'})
             
-            for image in images:
-                ### atribute of the image that contains the source
-                image = image.attrs['src']
-                #image = f'{str(image[:-5])}.{self.fmt}'
-                self.image_links.append(image)
-            
-            self.targets_dict[link] = [i for i in self.image_links]
+            try:
+                # check if title of page has the correct name and manufacturer
+                for name in self.name.split('_'):
+                    assert name in self.driver.title.lower()
+                
+                pageSoup = bs4.BeautifulSoup(page_html, 'html.parser')
+                ### class that contains the image source
+                images = pageSoup.findAll('img', {'class':'image'})
+                
+                for image in images:
+                    ### atribute of the image that contains the source
+                    image = image.attrs['src']
+                    #image = f'{str(image[:-5])}.{self.fmt}'
+                    self.image_links.append(image)
+                
+                self.targets_dict[link] = [i for i in self.image_links]
+                
+            except AssertionError as ae:
+                print(f'{ae}: {self.driver.title} doesn\'t match query {self.name}')
         self.driver.close()
                 
         print(f"A total of {len(self.image_links)} images was found.")
@@ -102,7 +115,7 @@ class Scraper:
             if e.errno != errno.EEXIST:
                 raise
         
-        with open(os.path.join(path, f'{self.prefix[:-1]}.json'), 'w') as fp:
+        with open(os.path.join(path, f'olx_{self.prefix}.json'), 'w') as fp:
             json.dump(self.targets_dict, fp)
          
         for i, link in enumerate(self.image_links):
@@ -111,7 +124,7 @@ class Scraper:
             
             req = Request(link, headers={'User-Agent': 'Mozilla/5.0'})
             webpage = urlopen(req).read()
-            with open(os.path.join(path, f"olx_{self.prefix}{i:04d}.jpg"), 'wb') as f:
+            with open(os.path.join(path, f"olx_{self.prefix}_{i:04d}.jpg"), 'wb') as f:
                 f.write(webpage)    
            
         print('done!')
