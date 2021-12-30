@@ -2,11 +2,11 @@
 
 [en-EN]
 
-A simple image scraper for Mercado Libre and OLX (Brazil)
+A simple image scraper for Mercado Libre and OLX (Brazil) using Selenium, URLlib and Beautiful Soup
 
 [pt-BR]
 
-Scraper simples para Mercado Livre e OLX
+Scraper simples para Mercado Livre e OLX usando Selenium, URLLib e Beautiful Soup
 
 ## Usage
 ### OLX
