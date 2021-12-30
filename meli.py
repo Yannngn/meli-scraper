@@ -10,9 +10,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 from argparse import ArgumentParser
 
 ### Exemplos
-# python main.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/argo_YearRange_2022-2022 --name fiat_argo --prefix fiat_argo_2022 --output /MeLi_Scraper
-# python main.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/creta_YearRange_2022-2022 --name hyundai_creta --prefix hyundai_creta_2022 --output /MeLi_Scraper
-# python main.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/toro_YearRange_2022-2022 --name fiat_toro --prefix fiat_toro_2022 --output /MeLi_Scraper
+# ------ ------- ----- https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/{carro}_YearRange_{year}-{year}
+# python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/argo_YearRange_2022-2022 --name fiat_argo --prefix fiat_argo_2022 --output /MeLi_Scraper
+# python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/creta_YearRange_2022-2022 --name hyundai_creta --prefix hyundai_creta_2022 --output /MeLi_Scraper
+# python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/toro_YearRange_2022-2022 --name fiat_toro --prefix fiat_toro_2022 --output /MeLi_Scraper
+# python meli.py --url https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/onix_YearRange_2022-2022 --name chevrolet_onix --prefix chevrolet_onix_2022 /MeLi_Scraper
 
 class Scraper:
     def __init__(self, hparams) -> None:
@@ -67,7 +69,7 @@ class Scraper:
         
         while n_links < self.max:
             # XPATH that contains the buttom to the next page
-            self.driver.find_element(By.XPATH, """//*[@id="root-app"]/div/div/section/div[4]/ul/li[3]/a""")
+            self.driver.find_element(By.XPATH, """//*[@id="root-app"]/div/div/section/div[3]/ul/li[3]/a""")
             n_links = self.drive(n_links)
         print(f'Found {n_links} unique cars on sale')
             
@@ -93,20 +95,23 @@ class Scraper:
         
     def downloader(self) -> None:
         path = os.path.join(self.output_path, self.name)
-        
+
         try:
            os.makedirs(path)
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
         
-        with open(os.path.join(path, f'{self.name}.json'), 'w') as fp:
+        with open(os.path.join(path, f'meli_{self.prefix[:-1]}.json'), 'w') as fp:
             json.dump(self.targets_dict, fp)
          
         for i, link in enumerate(self.image_links):
+            
+            # How to make this loop use multiprocessing?
+            
             req = Request(link, headers={'User-Agent': 'Mozilla/5.0'})
             webpage = urlopen(req).read()
-            with open(os.path.join(path, f"{self.prefix}{i:04d}.{self.fmt}"), 'wb') as f:
+            with open(os.path.join(path, f"meli_{self.prefix}{i:04d}.{self.fmt}"), 'wb') as f:
                 f.write(webpage)    
            
         print('done!')
@@ -124,7 +129,6 @@ class Scraper:
         
         return parser
 
-#search_URL = 'https://lista.mercadolivre.com.br/veiculos/carros-caminhonetes/argo_YearRange_2022-2022'        
 
 def main(hparams):
     scrap = Scraper(hparams)
